@@ -132,3 +132,4 @@ dmypy.json
 
 #AWS Lambda Package
 /package
+stock-checker.zip
