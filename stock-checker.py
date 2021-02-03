@@ -1,49 +1,83 @@
 import json
 import os
+import boto3
 
 from urllib.request import urlopen
 from contextlib import closing
 from twilio.rest import Client
 
 
-api_key = os.environ['API_KEY']
-client = Client(os.environ['TWILIO_ACCOUNT_SID'], os.environ['TWILIO_AUTH_TOKEN'] )
-recipients = ['+14152715288']
+API_KEY = os.environ['API_KEY']
+TWILIO_CLIENT = Client(os.environ['TWILIO_ACCOUNT_SID'], os.environ['TWILIO_AUTH_TOKEN'] )
+SSM = boto3.client('ssm')
 
-def check_stock(symbol, lowerbound, upperbound, volume_limit):
-    with closing(urlopen("https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={apikey}".format(symbol=symbol, apikey=api_key))) as responseData:
+
+def check_stock(stock_param):    
+    stock = json.loads(stock_param['Value'])
+    with closing(urlopen("https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={apikey}".format(symbol=stock['symbol'], apikey=API_KEY))) as responseData:
         jsonData = responseData.read()
+        if jsonData is None:
+            print("Unable to fetch data for {symbol}".format(symbol=stock['symbol']))
+            return
+            
         deserialisedData = json.loads(jsonData)[0]
         price = deserialisedData['price']
-        print("The price for {symbol} is ${price}".format(symbol=symbol, price=price))
+        print("The price for {symbol} is ${price}".format(symbol=stock['symbol'], price=price))
 
-        if price < lowerbound:   
-            notify_recipients("The price for {symbol} is ${price}, which exceeds the lower bound of ${lowerbound}".format(symbol=symbol, price=price, lowerbound=lowerbound))
+        if price < stock['lowerbound']:   
+            notify_recipients("The price for {symbol} is ${price}, which exceeds the lower bound of ${lowerbound}".format(symbol=stock['symbol'], price=price, lowerbound=stock['lowerbound']), stock['recipients'])
             return
 
-        if price > upperbound:   
-            notify_recipients("The price for {symbol} is ${price}, which exceeds the upper bound of ${upperbound}".format(symbol=symbol, price=price, upperbound=upperbound))
+        if price > stock['upperbound']:   
+            notify_recipients("The price for {symbol} is ${price}, which exceeds the upper bound of ${upperbound}".format(symbol=stock['symbol'], price=price, upperbound=stock['upperbound']), stock['recipients'])
             return
         
         volume = deserialisedData['volume']
-        if volume > volume_limit:
-            notify_recipients("The volume for {symbol} is {volume}, which exceeds the volume limit of {volume_limit}".format(symbol=symbol, volume=volume, volume_limit=volume_limit))
+        if volume > stock['volume_limit']:
+            notify_recipients("The volume for {symbol} is {volume}, which exceeds the volume limit of {volume_limit}".format(symbol=stock['symbol'], volume=volume, volume_limit=stock['volume_limit']), stock['recipients'])
             return
 
 
 def send_sms(recipient, msg):
     try:
-        message = client.messages.create(body=msg, from_='+16028334820', to=recipient)
+        message = TWILIO_CLIENT.messages.create(body=msg, from_='+16028334820', to=recipient)
         print("Message sent to {recipient} {message_sid}".format(recipient=recipient, message_sid=message.sid))
     except:
         print("Unable to send message to {recipient}".format(recipient=recipient))
 
-def notify_recipients(msg):
+
+def notify_recipients(msg, recipients):
     for recipient in recipients:
         send_sms(recipient, msg)
 
 
+def get_parameters_by_path(next_token = None):
+    params = {
+        'Path': '/prod/stocks',
+        'Recursive': False,
+        'WithDecryption': True
+    }
+    if next_token is not None:
+        params['NextToken'] = next_token
+    return SSM.get_parameters_by_path(**params)
+
+
+def stocks():
+    next_token = None
+    while True:
+        response = get_parameters_by_path(next_token)
+        parameters = response['Parameters']
+        if len(parameters) == 0:
+            break
+        for parameter in parameters:
+            yield parameter
+        if 'NextToken' not in response:
+            break
+        next_token = response['NextToken']        
+
+
 def lambda_handler(event, context):
-    check_stock("GME", 0, 400, 100000000)
-    check_stock("AMC", 0, 30, 600000000)
+    for stock in stocks():
+        check_stock(stock)
+
 
