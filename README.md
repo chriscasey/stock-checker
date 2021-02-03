@@ -20,11 +20,11 @@ For each stock that should be checked, create a configuration in Parameter Store
 ```
 
 #### Descriptions
-`symbol` = the ticker symbol of the stock
-`lowerbound` = if the current value of the stock is below this value, a message will be sent
-`upperbound` = if the current value of the stock is above this value, a message will be sent
-`volume_limit` = if the daily volume is above this value, a message will be sent
-`recipients` = a list of phone numbers which will receive alerts for the stock
+- `symbol` = the ticker symbol of the stock
+- `lowerbound` = if the current value of the stock is below this value, a message will be sent
+- `upperbound` = if the current value of the stock is above this value, a message will be sent
+- `volume_limit` = if the daily volume is above this value, a message will be sent
+- `recipients` = a list of phone numbers which will receive alerts for the stock
 
 
 ### Environment Variables
@@ -33,8 +33,10 @@ For each stock that should be checked, create a configuration in Parameter Store
 - `TWILIO_AUTH_TOKEN`
 
 ## Deployment
-- `cd package`
-- `zip -r ../stock-checker.zip .`
-- `cd ..`
-- `zip -g stock-checker.zip stock-checker.py`
-- `aws lambda update-function-code --function-name stockChecker --zip-file fileb://stock-checker.zip`
+```
+cd package
+zip -r ../stock-checker.zip .
+cd ..
+zip -g stock-checker.zip stock-checker.py
+aws lambda update-function-code --function-name stockChecker --zip-file fileb://stock-checker.zip
+```
