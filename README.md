@@ -10,9 +10,9 @@ For each stock that should be checked, create a configuration in Parameter Store
 ```
 {
    "symbol":"STOCK_SYMBOL",
-   "lowerbound":0,
-   "upperbound":300,
-   "volume_limit":100000000,
+   "price_lowerbound":0,
+   "price_upperbound":300,
+   "volume_upperbound":100000000,
    "recipients":[
       "+15551234567"
    ]
@@ -21,9 +21,9 @@ For each stock that should be checked, create a configuration in Parameter Store
 
 #### Descriptions
 - `symbol` = the ticker symbol of the stock
-- `lowerbound` = if the current value of the stock is below this value, a message will be sent
-- `upperbound` = if the current value of the stock is above this value, a message will be sent
-- `volume_limit` = if the daily volume is above this value, a message will be sent
+- `price_lowerbound` = if the current value of the stock is below this value, a message will be sent
+- `price_upperbound` = if the current value of the stock is above this value, a message will be sent
+- `volume_upperbound` = if the daily volume is above this value, a message will be sent
 - `recipients` = a list of phone numbers which will receive alerts for the stock
 
 
