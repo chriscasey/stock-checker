@@ -13,8 +13,7 @@ TWILIO_CLIENT = Client(
 SSM = boto3.client('ssm')
 
 
-def check_stock(stock_param):
-    stock = json.loads(stock_param['Value'])
+def check_stock(stock):
     with closing(urlopen("https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={apikey}".format(symbol=stock['symbol'], apikey=API_KEY))) as responseData:
         jsonData = responseData.read()
         if jsonData is None:
@@ -98,5 +97,7 @@ def stocks():
 
 
 def lambda_handler(event, context):
-    for stock in stocks():
-        check_stock(stock)
+    for stock_param in stocks():
+        stock = json.loads(stock_param['Value'])
+        if (stock['active']):
+            check_stock(stock)
